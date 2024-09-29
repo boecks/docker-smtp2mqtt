@@ -49,7 +49,7 @@ jobs:
           file: smtp2mqtt/Dockerfile  
           push: true
           tags: |
-            ghcr.io/alpenflizzer/docker-smtp2mqtt-${{ matrix.platform == 'linux/amd64' && 'amd64' || matrix.platform == 'linux/arm64' && 'arm64' || matrix.platform == 'linux/arm/v7' && 'armv7' || matrix.platform == 'linux/arm/v6' && 'armv6' || 'i386' }}:${{ github.ref == 'refs/heads/main' && 'latest' || github.ref == 'refs/heads/dev' && 'dev' || github.event_name == 'pull_request' && 'pr-${{ github.event.number }}' }}
+            ghcr.io/alpenflizzer/docker-smtp2mqtt-${{ matrix.platform == 'linux/amd64' && 'amd64' || matrix.platform == 'linux/arm64' && 'arm64' || matrix.platform == 'linux/arm/v7' && 'armv7' || matrix.platform == 'linux/arm/v6' && 'armv6' || 'i386' }}:${{ github.ref == 'refs/heads/main' && 'latest' || github.ref == 'refs/heads/dev' && 'dev' || (github.event_name == 'pull_request' && format('pr-{0}', github.event.number)) || 'dev' }}
           platforms: ${{ matrix.platform }}
           build-args: |
             BUILD_FROM=python:3.11-alpine
