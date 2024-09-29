@@ -1,12 +1,20 @@
+# Use a specific Python version as the base image
 ARG BUILD_FROM=python:3.11-alpine
 FROM ${BUILD_FROM}
 
+# Set the working directory
 WORKDIR /app
 
-COPY ./smtp2mqtt/start.sh ./smtp2mqtt/smtp2mqtt.py /app/
+# Install required packages and Python dependencies
+RUN apk add --no-cache python3 py3-pip \
+    && pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir paho-mqtt aiosmtpd
 
-RUN chmod 755 /app/start.sh
+# Copy application files
+COPY . .
 
-RUN apk add --no-cache python3 py3-pip && pip3 install paho-mqtt aiosmtpd
+# Ensure the start script is executable
+RUN chmod +x start.sh
 
-ENTRYPOINT ["/app/start.sh"]
+# Define the command to run the application
+CMD ["/app/start.sh"]

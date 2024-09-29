@@ -1,57 +1,40 @@
-#!/usr/bin/env bashio
+#!/bin/sh
 
-bashio::log.info "getting configuration..."
-CONFIG_PATH=/data/options.json
+echo "Getting configuration..."
 
-#grab this first since we'll use it below
-DEBUG="$(bashio::config 'debug')"
-if [[ -n $DEBUG ]] && [[ $DEBUG != "null" ]]; then
-    if [[ $DEBUG = "true" ]]; then
-        bashio::log.info "exporting [DEBUG=${DEBUG}]"
-    fi
-    export DEBUG
+# Set default values for environment variables
+DEBUG=${DEBUG:-false}
+MQTT_HOST=${MQTT_HOST:-localhost}
+SMTP_LISTEN_PORT=${SMTP_LISTEN_PORT:-25}
+SMTP_AUTH_REQUIRED=${SMTP_AUTH_REQUIRED:-false}
+SMTP_RELAY_HOST=${SMTP_RELAY_HOST:-""}
+SMTP_RELAY_PORT=${SMTP_RELAY_PORT:-""}
+SMTP_RELAY_USER=${SMTP_RELAY_USER:-""}
+SMTP_RELAY_PASS=${SMTP_RELAY_PASS:-""}
+SMTP_RELAY_STARTTLS=${SMTP_RELAY_STARTTLS:-false}
+SMTP_RELAY_TIMEOUT_SECS=${SMTP_RELAY_TIMEOUT_SECS:-60}
+MQTT_PORT=${MQTT_PORT:-1883}
+MQTT_USER=${MQTT_USER:-""}
+MQTT_PASS=${MQTT_PASS:-""}
+MQTT_TOPIC=${MQTT_TOPIC:-"smtp2mqtt"}
+PUBLISH_ATTACHMENTS=${PUBLISH_ATTACHMENTS:-true}
+SAVE_ATTACHMENTS=${SAVE_ATTACHMENTS:-false}
+
+# Debugging output
+if [ "$DEBUG" = "true" ]; then
+    echo "Debug mode is enabled."
+    echo "MQTT_HOST: $MQTT_HOST"
 fi
 
-#treat this as special
-MQTT_HOST="$(bashio::config 'mqtt_host' 'core-mosquitto')"
-if [[ $DEBUG = "true" ]]; then
-    bashio::log.info "exporting [MQTT_HOST=$MQTT_HOST]"
-fi
-export MQTT_HOST=$MQTT_HOST
-
-#grab the rest in a loop
-for var in \
-    smtp_auth_required \
-    smtp_relay_host smtp_relay_port smtp_relay_user smtp_relay_pass smtp_relay_starttls smtp_relay_timeout_secs \
-    mqtt_port mqtt_user mqtt_pass mqtt_topic \
-    publish_attachments \
-;
-do
-    v="$(bashio::config ${var})"
-    if [[ -n $v ]] && [[ $v != "null" ]]; then
-        if [[ $DEBUG = "true" ]]; then
-            bashio::log.info "exporting [${var^^}=${v}]"
-        fi
-        export ${var^^}=${v}
-    fi
-done
-
-#create a sub directory under share
-SAVE_ATTACHMENTS="$(bashio::config 'save_attachments')"
-if [[ -n $SAVE_ATTACHMENTS ]] && [[ ${SAVE_ATTACHMENTS,,} = "true" ]]; then
-    SAVE_ATTACHMENTS_DIR="/share/smtp2mqtt"
-    if [[ -n ${MQTT_TOPIC:-} ]] && [[ $MQTT_TOPIC != "null" ]]; then
-        SAVE_ATTACHMENTS_DIR="/share/$MQTT_TOPIC"
-    fi
-    if [[ $DEBUG = "true" ]]; then
-        bashio::log.info "creating attachment save dir $SAVE_ATTACHMENTS_DIR"
-    fi
-    mkdir -p $SAVE_ATTACHMENTS_DIR
-    if [[ $DEBUG = "true" ]]; then
-        bashio::log.info "exporting [SAVE_ATTACHMENTS_DIR=${SAVE_ATTACHMENTS_DIR}]"
-    fi
-    export SAVE_ATTACHMENTS_DIR
+# Set the attachment save directory if needed
+if [ "$SAVE_ATTACHMENTS" = "true" ]; then
+    SAVE_ATTACHMENTS_DIR=${SAVE_ATTACHMENTS_DIR:-"/share/smtp2mqtt"}
+    echo "Creating attachment save directory: $SAVE_ATTACHMENTS_DIR"
+    mkdir -p "$SAVE_ATTACHMENTS_DIR" || {
+        echo "Failed to create directory: $SAVE_ATTACHMENTS_DIR"
+        exit 1
+    }
 fi
 
-bashio::log.info "starting application..."
-python3 /app/smtp2mqtt.py
+echo "Starting application..."
+exec python3 /app/smtp2mqtt.py
