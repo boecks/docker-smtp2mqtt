@@ -44,3 +44,5 @@ jobs:
           tags: |
             ghcr.io/alpenflizzer/docker-smtp2mqtt-${{ matrix.platform == 'linux/amd64' && 'amd64' || matrix.platform == 'linux/arm64' && 'arm64' || matrix.platform == 'linux/arm/v7' && 'armv7' || matrix.platform == 'linux/arm/v6' && 'armv6' || 'i386' }}:latest
           platforms: ${{ matrix.platform }}
+          build-args: |
+            BUILD_FROM=${{ matrix.platform == 'linux/amd64' && 'python:3.11-alpine' || matrix.platform == 'linux/arm64' && 'python:3.11-alpine' || matrix.platform == 'linux/arm/v7' && 'python:3.11-alpine' || matrix.platform == 'linux/arm/v6' && 'python:3.11-alpine' || 'python:3.11-alpine' }}
