@@ -29,8 +29,8 @@ jobs:
       - name: Build and Push the Docker image
         uses: docker/build-push-action@v3
         with:
-          context: ./smtp2mqtt
-          file: Dockerfile
+          context: .
+          file: ./smtp2mqtt/Dockerfile
           push: true
           tags: |
             ghcr.io/alpenflizzer/docker-smtp2mqtt-${{ matrix.platform == 'linux/amd64' && 'amd64' || matrix.platform == 'linux/arm64' && 'arm64' || matrix.platform == 'linux/arm/v7' && 'armv7' || matrix.platform == 'linux/arm/v6' && 'armv6' || 'i386' }}:latest
