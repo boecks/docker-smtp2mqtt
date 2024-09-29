@@ -3,24 +3,15 @@ name: Build and Publish Docker Image
 on:
   push:
     branches:
-      - setup_action
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
-          - linux/arm/v7
-          - linux/arm/v6
-          - linux/386
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -36,13 +27,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push the Docker image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
-          context: .
-          file: ./smtp2mqtt/Dockerfile
+          context: ./smtp2mqtt
+          file: Dockerfile
           push: true
           tags: |
-            ghcr.io/alpenflizzer/docker-smtp2mqtt-${{ matrix.platform == 'linux/amd64' && 'amd64' || matrix.platform == 'linux/arm64' && 'arm64' || matrix.platform == 'linux/arm/v7' && 'armv7' || matrix.platform == 'linux/arm/v6' && 'armv6' || 'i386' }}:setup_action
+            ghcr.io/alpenflizzer/docker-smtp2mqtt-${{ matrix.platform == 'linux/amd64' && 'amd64' || matrix.platform == 'linux/arm64' && 'arm64' || matrix.platform == 'linux/arm/v7' && 'armv7' || matrix.platform == 'linux/arm/v6' && 'armv6' || 'i386' }}:latest
           platforms: ${{ matrix.platform }}
           build-args: |
             BUILD_FROM=python:3.11-alpine
