@@ -3,7 +3,7 @@ FROM ${BUILD_FROM}
 
 WORKDIR /app
 
-COPY start.sh smtp2mqtt.py /app/
+COPY ./smtp2mqtt/start.sh ./smtp2mqtt/smtp2mqtt.py /app/
 
 RUN chmod 755 /app/start.sh
 
