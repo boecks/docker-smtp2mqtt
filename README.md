@@ -1,9 +1,14 @@
-# Home Assistant Add-ons
+# Standalone dockerized SMTP to MQTT
 
-A repository of add-ons for Home Assistant
+This is a custom version of the original `smtp2mqtt` project which is provided as a Home Assistant addon. 
+This version aims to provide a standalone version that can be deployed outside of Home Assistant in any generic Docker environment.
 
-## List of add-ons
+## Acknowledgments
 
-- SMTP to MQTT - this will turn your Home Assistant into an SMTP server and publish emails to an MQTT broker
+This project is a fork of [smtp2mqtt](https://github.com/bcastellucci/addons) by [Ben Castellucci]. The original project is licensed under the MIT License. 
 
-That's it!
+The original code and its contributors are acknowledged and credited here.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
