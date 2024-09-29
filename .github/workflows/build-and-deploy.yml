@@ -3,7 +3,7 @@ name: Build and Publish Docker Image
 on:
   push:
     branches:
-      - setup_action
+      - main
 
 jobs:
   build:
