@@ -9,6 +9,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+          - linux/arm/v7
+          - linux/arm/v6
+          - linux/386
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -33,5 +42,5 @@ jobs:
           file: ./smtp2mqtt/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name | toLower }}:latest
-          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/386
+            ghcr.io/alpenflizzer/docker-smtp2mqtt-${{ matrix.platform == 'linux/amd64' && 'amd64' || matrix.platform == 'linux/arm64' && 'arm64' || matrix.platform == 'linux/arm/v7' && 'armv7' || matrix.platform == 'linux/arm/v6' && 'armv6' || 'i386' }}:latest
+          platforms: ${{ matrix.platform }}
