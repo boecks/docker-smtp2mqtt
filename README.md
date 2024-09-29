@@ -5,7 +5,7 @@ This version aims to provide a standalone version that can be deployed outside o
 
 ## Acknowledgments
 
-This project is a fork of [smtp2mqtt](https://github.com/bcastellucci/addons) by [Ben Castellucci]. The original project is licensed under the MIT License. 
+This project is a fork of [smtp2mqtt](https://github.com/bcastellucci/addons) by [\[Ben Castellucci\]](https://github.com/bcastellucci). The original project is licensed under the MIT License. 
 
 The original code and its contributors are acknowledged and credited here.
 
