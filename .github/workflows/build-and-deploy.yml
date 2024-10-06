@@ -57,7 +57,8 @@ jobs:
               matrix.platform == 'linux/arm/v7' && 'armv7' || 
               matrix.platform == 'linux/arm/v6' && 'armv6' || 
               'i386' 
-            }}:${{ github.ref == 'refs/tags/*' && github.ref_name || github.ref == 'refs/heads/main' && 'latest' || github.ref == 'refs/heads/dev' && 'dev' || (github.event_name == 'pull_request' && format('pr-{0}', github.event.number)) || 'dev' }}
+            }}:${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && github.ref_name || github.ref == 'refs/heads/main' && 'latest' || github.ref == 'refs/heads/dev' && 'dev' || (github.event_name == 'pull_request' && format('pr-{0}', github.event.number)) || 'dev' }}
           platforms: ${{ matrix.platform }}
           build-args: |
             BUILD_FROM=python:3.11-alpine
+
