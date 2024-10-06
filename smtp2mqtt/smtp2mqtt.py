@@ -21,7 +21,7 @@ from paho.mqtt import publish
 
 # Default configurations
 config_defaults = {
-    "SMTP_BIND_ADDRESS": "localhost",
+    "SMTP_BIND_ADDRESS": "0.0.0.0",
     "SMTP_LISTEN_PORT": "25",
     "SMTP_AUTH_REQUIRED": "False",
     "SMTP_RELAY_HOST": None,
