@@ -16,11 +16,12 @@ from paho.mqtt import publish
 
 ##
 ## Original source from https://github.com/wicol/emqtt
-## Heavily modified by https://github.com/AlpenFlizzer in 2024
+## Heavily modified by https://github.com/boecks in 2024
 ##
 
 # Default configurations
 config_defaults = {
+    "SMTP_BIND_ADDRESS": "localhost",
     "SMTP_LISTEN_PORT": "25",
     "SMTP_AUTH_REQUIRED": "False",
     "SMTP_RELAY_HOST": None,
@@ -35,18 +36,18 @@ config_defaults = {
     "MQTT_PASS": None,
     "MQTT_TOPIC": "smtp2mqtt",
     "PUBLISH_ATTACHMENTS": "False",
-    "SAVE_ATTACHMENTS_DIR": None,
-    "DEBUG": "False",
+    "SAVE_ATTACHMENTS_DIR": "/share",
+    "DEBUG": "True",
 }
 
 # Load configuration from environment variables
 config = {key: os.getenv(key, default) for key, default in config_defaults.items()}
 
-# Convert config values
+# Convert config values to appropriate types
 for key, value in config.items():
     if value is None:
         config[key] = config_defaults[key]
-    elif isinstance(value, str) and value.lower() in ["true", "false"]:
+    elif value.lower() in ["true", "false"]:
         config[key] = value.lower() == "true"
     else:
         config[key] = value
@@ -60,6 +61,8 @@ ch.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(uu
 log.addHandler(ch)
 
 class SMTP2MQTTHandler:
+    """Handles SMTP messages and publishes them to MQTT."""
+    
     def __init__(self, loop):
         self.loop = loop
         self.quit = False
@@ -68,9 +71,9 @@ class SMTP2MQTTHandler:
         signal.signal(signal.SIGINT, self.set_quit)
 
     async def handle_DATA(self, server, session, envelope):
+        """Handles incoming email messages."""
         log_extra = {'uuid': str(uuid.uuid4())[:8]}
-        log.info("Message from %s", envelope.mail_from, extra=log_extra)
-        log.debug(f"Envelope details: {envelope}", extra=log_extra)
+        log.info("Received message from %s", envelope.mail_from, extra=log_extra)
 
         msg = email.message_from_bytes(envelope.original_content, policy=default)
         payload = {
@@ -80,14 +83,13 @@ class SMTP2MQTTHandler:
         }
         topic = f"{config['MQTT_TOPIC']}/{envelope.mail_from.replace('/', '')}"
 
-        # Extract and handle message body
+        # Extract message body and attachments
         self.extract_body(msg, payload)
-        # Handle attachments
         self.handle_attachments(msg, payload, log_extra)
 
         # Publish to MQTT
         log.info("Publishing message to MQTT...", extra=log_extra)
-        self.mqtt_publish(topic, json.dumps(payload), log_extra)
+        await self.mqtt_publish(topic, json.dumps(payload), log_extra)
 
         # Relay the original message if configured
         if config["SMTP_RELAY_HOST"]:
@@ -101,21 +103,21 @@ class SMTP2MQTTHandler:
             if msg.is_multipart():
                 for part in msg.iter_parts():
                     if part.get_content_type() in ['text/plain', 'text/html']:
-                        body_part = {
-                            'best_guess': part.get_content_type(),
-                            'headers': {k.lower(): v for k, v in part.items()},
-                            'content': part.get_content()
-                        }
+                        body_part = self.create_body_part(part)
                         payload['mime_parts'].append(body_part)
             else:
-                body_part = {
-                    'best_guess': msg.get_content_type(),
-                    'headers': {k.lower(): v for k, v in msg.items()},
-                    'content': msg.get_content()
-                }
+                body_part = self.create_body_part(msg)
                 payload['mime_parts'].append(body_part)
         except Exception as e:
             log.error("Failed to extract body: %s", e, extra={'uuid': payload['uuid']})
+
+    def create_body_part(self, msg_part):
+        """Creates a body part dictionary from a message part."""
+        return {
+            'best_guess': msg_part.get_content_type(),
+            'headers': {k.lower(): v for k, v in msg_part.items()},
+            'content': msg_part.get_content()
+        }
 
     def handle_attachments(self, msg, payload, log_extra):
         """Handles the attachments of the email message."""
@@ -126,36 +128,45 @@ class SMTP2MQTTHandler:
                     'headers': {k.lower(): v for k, v in attachment.items()}
                 }
                 content = attachment.get_content()
-                
+
+                log.info(f"Attachment detected: {attachment.get_filename()}, Content Type: {attachment.get_content_type()}", extra=log_extra)
+
                 if config["PUBLISH_ATTACHMENTS"]:
                     mime_part['content'] = base64.b64encode(content).decode("utf8", errors="replace")
                 else:
                     mime_part['content'] = "<not configured to publish attachment data>"
-                
-                if config["SAVE_ATTACHMENTS_DIR"]:
-                    filename = f"{log_extra['uuid']}_{attachment.get_filename()}"
-                    file_path = os.path.join(config["SAVE_ATTACHMENTS_DIR"], filename)
-                    with open(file_path, "wb") as f:
-                        f.write(content)
-                    mime_part['saved_file_name'] = file_path
 
-                payload['mime_parts'].append(mime_part)
+                self.save_attachment(attachment, log_extra, content, mime_part)
+
         except Exception as e:
-            log.error("Failed to handle attachments: %s", e, extra={'uuid': log_extra['uuid']})
+            log.error("Failed to handle attachments: %s", e, extra=log_extra)
 
-    def mqtt_publish(self, topic, payload, log_extra):
-        """Publishes the payload to the specified MQTT topic."""
-        # If payload is a string, convert it back to a dictionary
-        if isinstance(payload, str):
+    def save_attachment(self, attachment, log_extra, content, mime_part):
+        """Saves the attachment to the configured directory."""
+        if config["SAVE_ATTACHMENTS_DIR"]:
+            filename = f"{log_extra['uuid']}_{os.path.basename(attachment.get_filename())}"
+            file_path = os.path.join(config["SAVE_ATTACHMENTS_DIR"], filename)
+            log.info(f"Saving attachment to {file_path}", extra=log_extra)
             try:
-                payload = json.loads(payload)  # Convert string back to dict
-            except json.JSONDecodeError:
-                log.error("Failed to decode JSON payload", extra=log_extra)
-                return
+                with open(file_path, "wb") as f:
+                    f.write(content)
+                log.info(f"Successfully saved attachment: {file_path}", extra=log_extra)
+                mime_part['saved_file_name'] = file_path
+            except Exception as e:
+                log.error(f"Failed to save attachment to {file_path}: {e}", extra=log_extra)
+
+    async def mqtt_publish(self, topic, payload, log_extra):
+        """Publishes the payload to the specified MQTT topic."""
+        # Ensure payload is a dictionary
+        try:
+            payload = json.loads(payload)
+        except json.JSONDecodeError:
+            log.error("Failed to decode JSON payload", extra=log_extra)
+            return
 
         message_uuid = payload.get("uuid")
 
-        # Check if the message has already been published
+        # Check for duplicate messages
         if message_uuid in self.published_message_uuids:
             log.warning(f"Message with UUID {message_uuid} has already been published. Skipping...")
             return
@@ -164,7 +175,7 @@ class SMTP2MQTTHandler:
         try:
             publish.single(
                 topic,
-                json.dumps(payload),  # Keep the payload as a JSON string for publishing
+                json.dumps(payload),
                 hostname=config["MQTT_HOST"],
                 port=int(config["MQTT_PORT"] or 1883),
                 auth={
@@ -199,7 +210,6 @@ class SMTP2MQTTHandler:
         log.info("Quitting...", extra={'uuid': 'main thread'})
         self.quit = True
 
-# Dummy authenticator for SMTP
 def dummy_auth_function(server, session, envelope, mechanism, auth_data):
     """Dummy authentication function that always succeeds."""
     log.info("Authenticating...", extra={'uuid': 'main thread'})
@@ -213,7 +223,7 @@ if __name__ == "__main__":
     controller = Controller(
         handler=SMTP2MQTTHandler(loop),
         loop=loop,
-        hostname="0.0.0.0",
+        hostname=config["SMTP_BIND_ADDRESS"],
         port=int(config["SMTP_LISTEN_PORT"]),
         authenticator=dummy_auth_function,
         auth_required=config["SMTP_AUTH_REQUIRED"],
