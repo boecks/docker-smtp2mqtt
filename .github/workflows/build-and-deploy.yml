@@ -42,9 +42,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Log Debug Info
-        run: echo "Ref: ${{ github.ref }}, Ref Name: ${{ github.ref_name }}"
-
       - name: Build and Push the Docker image
         uses: docker/build-push-action@v6
         with:
@@ -58,7 +55,7 @@ jobs:
               matrix.platform == 'linux/arm/v7' && 'armv7' || 
               matrix.platform == 'linux/arm/v6' && 'armv6' || 
               'i386' 
-            }}:${{ github.ref_name }}
+            }}:${{ github.ref == 'refs/tags/*' && github.ref_name || github.ref == 'refs/heads/main' && 'latest' || github.ref == 'refs/heads/dev' && 'dev' || (github.event_name == 'pull_request' && format('pr-{0}', github.event.number)) || 'dev' }}
           platforms: ${{ matrix.platform }}
           build-args: |
             BUILD_FROM=python:3.11-alpine
