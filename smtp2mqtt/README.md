@@ -1,5 +1,7 @@
 # Standalone Dockerized SMTP2MQTT
 
+![SMTP to MQTT Logo](logo.png)
+
 Turns the original Home Assistent Add-On into a standalone SMTP server and publishes messages (email) to an MQTT broker.
 
 ![Supports aarch64 Architecture][aarch64-shield] ![Supports amd64 Architecture][amd64-shield] ![Supports armhf Architecture][armhf-shield] ![Supports armv7 Architecture][armv7-shield] ![Supports i386 Architecture][i386-shield]
