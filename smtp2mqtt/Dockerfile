@@ -13,8 +13,5 @@ RUN apk add --no-cache python3 py3-pip \
 # Copy application files
 COPY . .
 
-# Ensure the start script is executable
-RUN chmod +x start.sh
-
 # Define the command to run the application
-CMD ["/app/start.sh"]
+CMD ["python3", "/app/smtp2mqtt.py"]
