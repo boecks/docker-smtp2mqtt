@@ -23,7 +23,7 @@ from paho.mqtt import publish
 config_defaults = {
     "SMTP_BIND_ADDRESS": "0.0.0.0",
     "SMTP_LISTEN_PORT": "25",
-    "SMTP_AUTH_REQUIRED": "False",
+    "SMTP_AUTH_REQUIRED": "True",
     "SMTP_RELAY_HOST": None,
     "SMTP_RELAY_PORT": None,
     "SMTP_RELAY_USER": None,
@@ -35,8 +35,9 @@ config_defaults = {
     "MQTT_USER": None,
     "MQTT_PASS": None,
     "MQTT_TOPIC": "smtp2mqtt",
-    "PUBLISH_ATTACHMENTS": "False",
-    "SAVE_ATTACHMENTS_DIR": "/share",
+    "PUBLISH_ATTACHMENTS": "True",
+    "SAVE_ATTACHMENTS": "True",
+    "SAVE_ATTACHMENTS_DIR": "/share/smtp2mqtt",
     "DEBUG": "True",
 }
 
