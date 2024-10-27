@@ -203,6 +203,7 @@ class SMTP2MQTTHandler:
                 if config["SMTP_RELAY_USER"]:
                     relay.login(user=config["SMTP_RELAY_USER"], password=config["SMTP_RELAY_PASS"])
                 relay.send_message(msg, mail_from, rcpt_tos)
+                log.info("Successfully relayed email to %s", rcpt_tos, extra=log_extra)
         except Exception as e:
             log.exception("Failed relaying", extra=log_extra)
 
